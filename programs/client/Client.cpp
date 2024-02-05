@@ -487,6 +487,8 @@ void Client::connect()
 
     server_version = toString(server_version_major) + "." + toString(server_version_minor) + "." + toString(server_version_patch);
     load_suggestions = is_interactive && (server_revision >= Suggest::MIN_SERVER_REVISION) && !config().getBool("disable_suggestion", false);
+    // TODO fix MIN_SERVER_REVISION
+    load_autocomplete = is_interactive && (server_revision >= Suggest::MIN_SERVER_REVISION) && !config().getBool("disable_autocomplete", false);
 
     if (server_display_name = connection->getServerDisplayName(connection_parameters.timeouts); server_display_name.empty())
         server_display_name = config().getString("host", "localhost");

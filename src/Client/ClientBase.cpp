@@ -2387,6 +2387,11 @@ void ClientBase::runInteractive()
             suggest->load<LocalConnection>(global_context, connection_parameters, config().getInt("suggestion_limit"));
     }
 
+    if (load_autocomplete) 
+    {
+        
+    }
+
     if (home_path.empty())
     {
         const char * home_path_cstr = getenv("HOME"); // NOLINT(concurrency-mt-unsafe)

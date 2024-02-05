@@ -51,7 +51,9 @@ Suggest::Suggest()
               "IGNORE NULLS", "RESPECT NULLS", "OVER",         "PASTE"});
 }
 
-static String getLoadSuggestionQuery(Int32 suggestion_limit, bool basic_suggestion)
+
+namespace {
+String getLoadSuggestionQuery(Int32 suggestion_limit, bool basic_suggestion)
 {
     /// NOTE: Once you will update the completion list,
     /// do not forget to update 01676_clickhouse_client_autocomplete.sh
@@ -108,6 +110,8 @@ static String getLoadSuggestionQuery(Int32 suggestion_limit, bool basic_suggesti
     /// FIXME: This query does not work with the new analyzer because of bug https://github.com/ClickHouse/ClickHouse/issues/50669
     query = "SELECT DISTINCT arrayJoin(extractAll(name, '[\\\\w_]{2,}')) AS res FROM (" + query + ") WHERE notEmpty(res)";
     return query;
+}
+
 }
 
 template <typename ConnectionType>

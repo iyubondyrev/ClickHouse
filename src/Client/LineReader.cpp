@@ -1,11 +1,12 @@
 #include <Client/LineReader.h>
 
+#include <cctype>
 #include <iostream>
 #include <string_view>
 #include <algorithm>
 
-#include <cassert>
 #include <cstring>
+#include <type_traits>
 #include <unistd.h>
 #include <poll.h>
 #include <sys/time.h>

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <mutex>
 #include <atomic>
 #include <vector>
@@ -22,13 +23,39 @@ public:
 
         /// Get vector for the matched range of words if any.
         replxx::Replxx::completions_t getCompletions(const String & prefix, size_t prefix_length, const char * word_break_characters);
+
         void addWords(Words && new_words);
 
         void setCompletionsCallback(Callback && callback) { custom_completions_callback = callback; }
+        
+        static bool isLastCharSpace(const String & prefix, const char * word_break_characters)
+        {
+        // Is it even safe to iterate until '\0'? 
+        // We get const char * here, so there is no guarantee that it is a legit c-str with \0 at the end.
+        // Originally it is char[], maybe it is better to pass char[] everywhere? This way we can get size
+            if (prefix.empty()) {
+                return false;
+            }
+            for (const auto *p = word_break_characters; *p != '\0'; ++p) {
+                if (prefix.back() == *p) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        template <typename ContainerType>
+        auto getPossibleNextWords(const String & prefix, size_t, const char * word_break_characters)
+        {
+            assert(isLastCharSpace(prefix, word_break_characters));
+            return ContainerType(possible_next_words.begin(), possible_next_words.end());
+        }
 
     private:
         Words words TSA_GUARDED_BY(mutex);
         Words words_no_case TSA_GUARDED_BY(mutex);
+        // TODO remove this
+        Words possible_next_words{"abra", "bbbbb", "cadabra"}; // TSA_GUARDED_BY(mutex);
 
         Callback custom_completions_callback = nullptr;
 

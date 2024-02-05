@@ -22,6 +22,7 @@
 #include <fstream>
 #include <filesystem>
 #include <fmt/format.h>
+#include <replxx.hxx>
 #include <Common/quoteString.h>
 #include "config.h" // USE_SKIM
 
@@ -336,16 +337,60 @@ ReplxxLineReader::ReplxxLineReader(
 
     rx.install_window_change_handler();
 
-    auto callback = [&suggest, this] (const String & context, size_t context_size)
+    // TODO replace it with model predictions
+    const static std::vector<std::string> autocomplete_suggestions{"suggestion_1", "suggestion_2", "suggestion_3", "suggestion_4"};
+
+    auto suggestions_callback = [&suggest, this] (const String & context, size_t context_size)
     {
+        if (suggest.isLastCharSpace(context, word_break_characters)) {
+            return suggest.getPossibleNextWords<Replxx::completions_t>(context, context_size, word_break_characters);
+        }
         return suggest.getCompletions(context, context_size, word_break_characters);
     };
 
-    rx.set_completion_callback(callback);
+    auto hints_callback = [&suggest, this](const String & context, size_t context_size, Replxx::Color& color)
+    {   
+        color = replxx::color::rgb666(5, 5, 0);
+        if (suggest.isLastCharSpace(context, word_break_characters)) {
+            return suggest.getPossibleNextWords<Replxx::hints_t>(context, context_size, word_break_characters);
+        }
+        return Replxx::hints_t{};
+    };
+
+    Replxx::key_press_handler_t cycle_forward_handler = [this](char32_t) {
+        //std::cout << hintIndex << "\n";
+        rx.invoke(Replxx::ACTION::HINT_NEXT, 0);
+        return Replxx::ACTION_RESULT::CONTINUE;
+    };
+
+    // Key handler for cycling hints backward
+    Replxx::key_press_handler_t cycle_backward_handler = [this](char32_t) {
+        rx.invoke(Replxx::ACTION::HINT_PREVIOUS, 0);
+        return Replxx::ACTION_RESULT::CONTINUE;
+    };
+
+    Replxx::key_press_handler_t complete_hint_handler = [this](char32_t) {
+        rx.invoke(Replxx::ACTION::COMPLETE_LINE, 0);
+        return Replxx::ACTION_RESULT::CONTINUE;
+    };
+
+    rx.set_completion_callback(suggestions_callback);
+    rx.set_hint_callback(hints_callback);
     rx.set_complete_on_empty(false);
     rx.set_word_break_characters(word_break_characters);
     rx.set_ignore_case(true);
     rx.set_indent_multiline(false);
+
+    rx.bind_key(Replxx::KEY::shift(Replxx::KEY::DOWN), cycle_forward_handler);
+
+    // Bind Ctrl + Left Arrow to cycle hints backward
+    rx.bind_key(Replxx::KEY::shift(Replxx::KEY::UP), cycle_backward_handler);
+
+    rx.bind_key(Replxx::KEY::shift(Replxx::KEY::RIGHT), complete_hint_handler);
+
+    // Set maximum number of hint rows and hint delay
+    rx.set_max_hint_rows(2);
+    rx.set_hint_delay(0);  // Show hints without delay
 
     if (highlighter)
         rx.set_highlighter_callback(highlighter);
